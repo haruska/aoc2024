@@ -30,5 +30,5 @@ lint_fix:
 fetch *day:
   cargo aoc input {{ if day != "" { "-d" } else { "" } }} {{day}}
 
-run *day: lint
+run *day: lint test
   cargo aoc {{ if day != "" { "-d" } else { "" } }} {{day}}
