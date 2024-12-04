@@ -79,6 +79,29 @@ impl Puzzle {
             .filter(|direction| self.check_direction(*direction, (i, j), chars.as_slice()))
             .count()
     }
+
+    pub fn check_for_x(&self, a: (usize, usize)) -> bool {
+        let (i, j) = a;
+        if i == 0 || j == 0 {
+            return false;
+        }
+
+        let chars1: String = [
+            self.get(i - 1, j - 1).unwrap_or('Z'),
+            self.get(i + 1, j + 1).unwrap_or('Z'),
+        ]
+        .iter()
+        .collect();
+
+        let chars2: String = [
+            self.get(i - 1, j + 1).unwrap_or('Z'),
+            self.get(i + 1, j - 1).unwrap_or('Z'),
+        ]
+        .iter()
+        .collect();
+
+        [chars1, chars2].iter().all(|cs| cs == "SM" || cs == "MS")
+    }
 }
 
 #[aoc_generator(day4)]
@@ -92,6 +115,17 @@ pub fn part1(input: &Puzzle) -> usize {
         .find('X')
         .iter()
         .fold(0, |acc, point| acc + input.check(*point))
+}
+
+#[aoc(day4, part2)]
+pub fn part2(input: &Puzzle) -> usize {
+    input.find('A').iter().fold(0, |acc, point| {
+        if input.check_for_x(*point) {
+            acc + 1
+        } else {
+            acc
+        }
+    })
 }
 
 #[cfg(test)]
@@ -132,6 +166,13 @@ mod tests {
     fn test_part_one() {
         let input = input_generator(TEST_INPUT);
         let result = part1(&input);
-        assert_eq!(result, 18)
+        assert_eq!(result, 18);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let input = input_generator(TEST_INPUT);
+        let result = part2(&input);
+        assert_eq!(result, 9);
     }
 }
