@@ -4,14 +4,14 @@ use std::collections::{HashMap, HashSet};
 type RuleSet = HashMap<u32, Page>;
 
 #[derive(Debug, PartialEq, Clone, Default)]
-pub struct Page {
+struct Page {
     num: u32,
     before: HashSet<u32>,
     after: HashSet<u32>,
 }
 
 impl Page {
-    pub fn valid(&self, rules: &RuleSet) -> bool {
+    fn valid(&self, rules: &RuleSet) -> bool {
         let p_rules = rules.get(&self.num).unwrap();
         self.before.intersection(&p_rules.after).count() == 0
             && self.after.intersection(&p_rules.before).count() == 0
@@ -24,21 +24,21 @@ pub struct PageList {
 }
 
 impl PageList {
-    pub fn new(nums: &[u32]) -> Self {
+    fn new(nums: &[u32]) -> Self {
         let mut p_list = PageList::default();
         nums.iter().for_each(|n| p_list.add(*n));
         p_list
     }
 
-    pub fn valid(&self, rules: &RuleSet) -> bool {
+    fn valid(&self, rules: &RuleSet) -> bool {
         self.pages.iter().all(|page| page.valid(rules))
     }
 
-    pub fn page_nums(&self) -> Vec<u32> {
+    fn page_nums(&self) -> Vec<u32> {
         self.pages.iter().map(|p| p.num).collect()
     }
 
-    pub fn middle_page(&self) -> u32 {
+    fn middle_page(&self) -> u32 {
         let idx = self.pages.len() / 2;
         self.pages[idx].num
     }
@@ -80,7 +80,7 @@ impl PageList {
 }
 
 #[aoc_generator(day5)]
-pub fn input_generator(input: &str) -> (RuleSet, Vec<PageList>) {
+fn input_generator(input: &str) -> (RuleSet, Vec<PageList>) {
     let (input1, input2) = input.split_once("\n\n").unwrap();
 
     let page_map = input1.lines().fold(HashMap::new(), |mut map, line| {
@@ -115,7 +115,7 @@ pub fn input_generator(input: &str) -> (RuleSet, Vec<PageList>) {
 }
 
 #[aoc(day5, part1)]
-pub fn part1(input: &(RuleSet, Vec<PageList>)) -> u32 {
+fn part1(input: &(RuleSet, Vec<PageList>)) -> u32 {
     let (rules, updates) = input;
     updates
         .iter()
@@ -125,7 +125,7 @@ pub fn part1(input: &(RuleSet, Vec<PageList>)) -> u32 {
 }
 
 #[aoc(day5, part2)]
-pub fn part2(input: &(RuleSet, Vec<PageList>)) -> u32 {
+fn part2(input: &(RuleSet, Vec<PageList>)) -> u32 {
     let (rules, updates) = input;
     updates
         .iter()
