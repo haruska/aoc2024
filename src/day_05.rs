@@ -83,7 +83,7 @@ impl PageList {
 fn input_generator(input: &str) -> (RuleSet, Vec<PageList>) {
     let (input1, input2) = input.split_once("\n\n").unwrap();
 
-    let page_map = input1.lines().fold(HashMap::new(), |mut map, line| {
+    let rule_set = input1.lines().fold(HashMap::new(), |mut map, line| {
         let (before_s, after_s) = line.split_once("|").unwrap();
         let before = before_s.parse().unwrap();
         let after = after_s.parse().unwrap();
@@ -103,7 +103,7 @@ fn input_generator(input: &str) -> (RuleSet, Vec<PageList>) {
         map
     });
 
-    let page_lists: Vec<PageList> = input2
+    let page_lists = input2
         .lines()
         .map(|l| {
             let nums: Vec<u32> = l.split(',').map(|x| x.parse().unwrap()).collect();
@@ -111,7 +111,7 @@ fn input_generator(input: &str) -> (RuleSet, Vec<PageList>) {
         })
         .collect();
 
-    (page_map, page_lists)
+    (rule_set, page_lists)
 }
 
 #[aoc(day5, part1)]
