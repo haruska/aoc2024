@@ -20,6 +20,19 @@ impl PageList {
         p_list
     }
 
+    pub fn valid(&self, rules: &HashMap<u32, Page>) -> bool {
+        self.pages.iter().all(|page| {
+            let p_rules = rules.get(&page.num).unwrap();
+            page.before.intersection(&p_rules.after).count() == 0
+                && page.after.intersection(&p_rules.before).count() == 0
+        })
+    }
+
+    pub fn middle_page(&self) -> u32 {
+        let idx = self.pages.len() / 2;
+        self.pages[idx].num
+    }
+
     fn add(&mut self, num: u32) {
         //insert num into each previous page
         //and calculate current page's before set
@@ -44,20 +57,20 @@ impl PageList {
 
 #[aoc_generator(day5)]
 pub fn input_generator(input: &str) -> (HashMap<u32, Page>, Vec<PageList>) {
-    let (input1, input2) = split_once(input, "\n\n");
+    let (input1, input2) = input.split_once("\n\n").unwrap();
 
     let page_map = input1.lines().fold(HashMap::new(), |mut map, line| {
-        let (before_s, after_s) = split_once(line, "|");
+        let (before_s, after_s) = line.split_once("|").unwrap();
         let before = before_s.parse().unwrap();
         let after = after_s.parse().unwrap();
 
-        let mut page = map.entry(before).or_insert(Page {
+        let page = map.entry(before).or_insert(Page {
             num: before,
             ..Default::default()
         });
         page.after.insert(after);
 
-        let mut page = map.entry(after).or_insert(Page {
+        let page = map.entry(after).or_insert(Page {
             num: after,
             ..Default::default()
         });
@@ -77,11 +90,14 @@ pub fn input_generator(input: &str) -> (HashMap<u32, Page>, Vec<PageList>) {
     (page_map, page_lists)
 }
 
-fn split_once<'a>(in_string: &'a str, pat: &str) -> (&'a str, &'a str) {
-    let mut splitter = in_string.splitn(2, pat);
-    let first = splitter.next().unwrap();
-    let second = splitter.next().unwrap();
-    (first, second)
+#[aoc(day5, part1)]
+pub fn part1(input: &(HashMap<u32, Page>, Vec<PageList>)) -> u32 {
+    let (rules, updates) = input;
+    updates
+        .iter()
+        .filter(|pl| pl.valid(rules))
+        .map(|pl| pl.middle_page())
+        .sum()
 }
 
 #[cfg(test)]
@@ -125,5 +141,12 @@ mod tests {
         let (map, list) = input_generator(TEST_INPUT);
         assert_eq!(map.len(), 7);
         assert_eq!(list.len(), 6);
+    }
+
+    #[test]
+    fn test_part_one() {
+        let input = input_generator(TEST_INPUT);
+        let result = part1(&input);
+        assert_eq!(result, 143);
     }
 }
