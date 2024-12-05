@@ -1,11 +1,21 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use std::collections::{HashMap, HashSet};
 
+type RuleSet = HashMap<u32, Page>;
+
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Page {
     num: u32,
     before: HashSet<u32>,
     after: HashSet<u32>,
+}
+
+impl Page {
+    pub fn valid(&self, rules: &RuleSet) -> bool {
+        let p_rules = rules.get(&self.num).unwrap();
+        self.before.intersection(&p_rules.after).count() == 0
+            && self.after.intersection(&p_rules.before).count() == 0
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -20,12 +30,12 @@ impl PageList {
         p_list
     }
 
-    pub fn valid(&self, rules: &HashMap<u32, Page>) -> bool {
-        self.pages.iter().all(|page| {
-            let p_rules = rules.get(&page.num).unwrap();
-            page.before.intersection(&p_rules.after).count() == 0
-                && page.after.intersection(&p_rules.before).count() == 0
-        })
+    pub fn valid(&self, rules: &RuleSet) -> bool {
+        self.pages.iter().all(|page| page.valid(rules))
+    }
+
+    pub fn page_nums(&self) -> Vec<u32> {
+        self.pages.iter().map(|p| p.num).collect()
     }
 
     pub fn middle_page(&self) -> u32 {
@@ -33,9 +43,23 @@ impl PageList {
         self.pages[idx].num
     }
 
+    fn sorted(&self, rules: &RuleSet) -> PageList {
+        let mut ordered: Vec<u32> = Vec::with_capacity(self.pages.len());
+
+        self.page_nums().iter().enumerate().for_each(|(i, num)| {
+            ordered.push(*num);
+            let mut idx = i;
+            while !PageList::new(ordered.as_slice()).valid(rules) {
+                ordered.swap(idx, idx - 1);
+                idx -= 1;
+            }
+        });
+
+        PageList::new(ordered.as_slice())
+    }
+
     fn add(&mut self, num: u32) {
-        //insert num into each previous page
-        //and calculate current page's before set
+        // insert num into each previous page and calculate current page's before set
         let before = self
             .pages
             .iter_mut()
@@ -56,7 +80,7 @@ impl PageList {
 }
 
 #[aoc_generator(day5)]
-pub fn input_generator(input: &str) -> (HashMap<u32, Page>, Vec<PageList>) {
+pub fn input_generator(input: &str) -> (RuleSet, Vec<PageList>) {
     let (input1, input2) = input.split_once("\n\n").unwrap();
 
     let page_map = input1.lines().fold(HashMap::new(), |mut map, line| {
@@ -91,12 +115,22 @@ pub fn input_generator(input: &str) -> (HashMap<u32, Page>, Vec<PageList>) {
 }
 
 #[aoc(day5, part1)]
-pub fn part1(input: &(HashMap<u32, Page>, Vec<PageList>)) -> u32 {
+pub fn part1(input: &(RuleSet, Vec<PageList>)) -> u32 {
     let (rules, updates) = input;
     updates
         .iter()
         .filter(|pl| pl.valid(rules))
         .map(|pl| pl.middle_page())
+        .sum()
+}
+
+#[aoc(day5, part2)]
+pub fn part2(input: &(RuleSet, Vec<PageList>)) -> u32 {
+    let (rules, updates) = input;
+    updates
+        .iter()
+        .filter(|pl| !pl.valid(rules))
+        .map(|pl| pl.sorted(rules).middle_page())
         .sum()
 }
 
@@ -148,5 +182,12 @@ mod tests {
         let input = input_generator(TEST_INPUT);
         let result = part1(&input);
         assert_eq!(result, 143);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let input = input_generator(TEST_INPUT);
+        let result = part2(&input);
+        assert_eq!(result, 123);
     }
 }
