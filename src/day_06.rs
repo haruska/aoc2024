@@ -1,5 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 type Point = (i32, i32);
 
@@ -18,7 +18,7 @@ impl MapLocation {
     }
 }
 
-#[derive(Default, PartialEq, Clone, Debug)]
+#[derive(Default, PartialEq, Clone, Debug, Hash, Eq)]
 enum Direction {
     #[default]
     Up,
@@ -134,6 +134,55 @@ fn part1(input: &ObstructionMap) -> usize {
     visited.len()
 }
 
+#[aoc(day6, part2)]
+fn part2(input: &ObstructionMap) -> usize {
+    let (i_len, j_len) = input.dimensions;
+    let points: Vec<(i32, i32)> = (0..i_len as i32)
+        .flat_map(|i| {
+            (0..j_len as i32)
+                .map(|j| (i, j))
+                .collect::<Vec<(i32, i32)>>()
+        })
+        .collect();
+
+    points
+        .into_iter()
+        .map(|(i, j)| MapLocation { point: (i, j) })
+        .filter(|loc| *loc != input.guard_position.location && !input.obstructions.contains(loc))
+        .filter(|obs| {
+            // create a map with one addition obstruction
+            let mut obs_map = input.clone();
+            obs_map.obstructions.insert(obs.clone());
+
+            // track locations visited *and* the directions traveled through them
+            let mut visited: HashMap<Point, HashSet<Direction>> = HashMap::new();
+            let mut pos = obs_map.guard_position.clone();
+
+            loop {
+                let traveled_directions = visited.entry(pos.location.point).or_default();
+                if traveled_directions.contains(&pos.direction) {
+                    //loop detected
+                    return true;
+                } else {
+                    traveled_directions.insert(pos.direction.clone());
+                }
+
+                let loc = pos.location.location_at(&pos.direction);
+                if obs_map.off_map(&loc) {
+                    // the new obstruction did not create a loop
+                    return false;
+                }
+
+                if obs_map.obstructions.contains(&loc) {
+                    pos.rotate();
+                } else {
+                    pos.location = loc;
+                }
+            }
+        })
+        .count()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,5 +213,12 @@ mod tests {
         let input = input_generator(TEST_INPUT);
         let result = part1(&input);
         assert_eq!(result, 41);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let input = input_generator(TEST_INPUT);
+        let result = part2(&input);
+        assert_eq!(result, 6);
     }
 }
