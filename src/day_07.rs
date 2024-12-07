@@ -1,9 +1,9 @@
-use aoc_runner_derive::aoc_generator;
+use aoc_runner_derive::{aoc, aoc_generator};
 
 #[derive(Default, PartialEq, Eq, Hash, Clone, Debug)]
 struct Calibration {
-    total: u32,
-    values: Vec<u32>,
+    total: usize,
+    values: Vec<usize>,
 }
 #[aoc_generator(day7)]
 fn input_generator(input: &str) -> Vec<Calibration> {
@@ -21,6 +21,46 @@ fn input_generator(input: &str) -> Vec<Calibration> {
         })
         .collect()
 }
+
+fn possible(total: usize, is_part2: bool, acc: usize, values: &[usize]) -> bool {
+    if values.is_empty() {
+        return total == acc;
+    }
+    if acc > total {
+        return false;
+    }
+
+    let concat_possible = is_part2
+        && possible(
+            total,
+            is_part2,
+            format!("{}{}", acc, values[0]).parse().unwrap(),
+            &values[1..],
+        );
+
+    concat_possible
+        || possible(total, is_part2, acc * values[0], &values[1..])
+        || possible(total, is_part2, acc + values[0], &values[1..])
+}
+
+fn solve(input: &[Calibration], is_part2: bool) -> usize {
+    input
+        .iter()
+        .filter(|c| possible(c.total, is_part2, 0, c.values.as_slice()))
+        .map(|c| c.total)
+        .sum()
+}
+
+#[aoc(day7, part1)]
+fn part1(input: &[Calibration]) -> usize {
+    solve(input, false)
+}
+
+#[aoc(day7, part2)]
+fn part2(input: &[Calibration]) -> usize {
+    solve(input, true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -49,5 +89,19 @@ mod tests {
         };
 
         assert_eq!(input[5], exp)
+    }
+
+    #[test]
+    fn test_part_one() {
+        let input = input_generator(TEST_INPUT);
+        let result = part1(&input);
+        assert_eq!(result, 3749);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let input = input_generator(TEST_INPUT);
+        let result = part2(&input);
+        assert_eq!(result, 11387);
     }
 }
