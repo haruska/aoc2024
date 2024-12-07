@@ -1,10 +1,48 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
-#[derive(Default, PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(PartialEq, Debug)]
 struct Calibration {
-    total: usize,
-    values: Vec<usize>,
+    total: u64,
+    values: Vec<u64>,
 }
+
+#[derive(PartialEq, Debug)]
+enum Operator {
+    Add,
+    Mult,
+    Concat,
+}
+
+impl Operator {
+    fn apply(&self, a: u64, b: u64) -> u64 {
+        match self {
+            Operator::Add => a + b,
+            Operator::Mult => a * b,
+            Operator::Concat => format!("{a}{b}").parse().unwrap(),
+        }
+    }
+}
+
+fn possible(total: u64, ops: &[Operator], acc: u64, values: &[u64]) -> bool {
+    if values.is_empty() {
+        return total == acc;
+    }
+    if acc > total {
+        return false;
+    }
+
+    ops.iter()
+        .any(|op| possible(total, ops, op.apply(acc, values[0]), &values[1..]))
+}
+
+fn solve(input: &[Calibration], ops: &[Operator]) -> u64 {
+    input
+        .iter()
+        .filter(|c| possible(c.total, ops, 0, c.values.as_slice()))
+        .map(|c| c.total)
+        .sum()
+}
+
 #[aoc_generator(day7)]
 fn input_generator(input: &str) -> Vec<Calibration> {
     input
@@ -22,43 +60,14 @@ fn input_generator(input: &str) -> Vec<Calibration> {
         .collect()
 }
 
-fn possible(total: usize, is_part2: bool, acc: usize, values: &[usize]) -> bool {
-    if values.is_empty() {
-        return total == acc;
-    }
-    if acc > total {
-        return false;
-    }
-
-    let concat_possible = is_part2
-        && possible(
-            total,
-            is_part2,
-            format!("{}{}", acc, values[0]).parse().unwrap(),
-            &values[1..],
-        );
-
-    concat_possible
-        || possible(total, is_part2, acc * values[0], &values[1..])
-        || possible(total, is_part2, acc + values[0], &values[1..])
-}
-
-fn solve(input: &[Calibration], is_part2: bool) -> usize {
-    input
-        .iter()
-        .filter(|c| possible(c.total, is_part2, 0, c.values.as_slice()))
-        .map(|c| c.total)
-        .sum()
-}
-
 #[aoc(day7, part1)]
-fn part1(input: &[Calibration]) -> usize {
-    solve(input, false)
+fn part1(input: &[Calibration]) -> u64 {
+    solve(input, &[Operator::Add, Operator::Mult])
 }
 
 #[aoc(day7, part2)]
-fn part2(input: &[Calibration]) -> usize {
-    solve(input, true)
+fn part2(input: &[Calibration]) -> u64 {
+    solve(input, &[Operator::Add, Operator::Mult, Operator::Concat])
 }
 
 #[cfg(test)]
