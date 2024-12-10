@@ -1,6 +1,8 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use std::collections::{HashMap, HashSet};
 
+const DIRECTIONS: &[(i32, i32); 4] = &[(0, 1), (0, -1), (1, 0), (-1, 0)];
+
 #[derive(Default, PartialEq, Eq, Hash, Clone, Debug)]
 struct Point(i32, i32);
 
@@ -45,7 +47,7 @@ impl TgMap {
             return HashSet::from([pos.clone()]);
         }
 
-        [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        DIRECTIONS
             .iter()
             .fold(HashSet::new(), |mut acc, (idx, jdx)| {
                 let neighbor = Point(pos.0 + idx, pos.1 + jdx);
@@ -62,6 +64,29 @@ impl TgMap {
             .map(|th| (th.clone(), self.find_nines(th).len()))
             .collect()
     }
+
+    fn rating(&self, pos: &Point) -> usize {
+        let val = self.at(pos);
+        if val == 9 {
+            return 1;
+        }
+
+        DIRECTIONS.iter().fold(0, |acc, (idx, jdx)| {
+            let neighbor = Point(pos.0 + idx, pos.1 + jdx);
+            if self.on_map(&neighbor) && self.at(&neighbor) == val + 1 {
+                acc + self.rating(&neighbor)
+            } else {
+                acc
+            }
+        })
+    }
+
+    fn ratings(&self) -> HashMap<Point, usize> {
+        self.trailheads()
+            .iter()
+            .map(|th| (th.clone(), self.rating(th)))
+            .collect()
+    }
 }
 
 #[aoc_generator(day10)]
@@ -76,6 +101,11 @@ fn input_generator(input: &str) -> TgMap {
 #[aoc(day10, part1)]
 fn part1(tg_map: &TgMap) -> usize {
     tg_map.scores().values().sum()
+}
+
+#[aoc(day10, part2)]
+fn part2(tg_map: &TgMap) -> usize {
+    tg_map.ratings().values().sum()
 }
 
 #[cfg(test)]
@@ -106,5 +136,12 @@ mod tests {
         let input = input_generator(TEST_INPUT);
         let result = part1(&input);
         assert_eq!(result, 36);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let input = input_generator(TEST_INPUT);
+        let result = part2(&input);
+        assert_eq!(result, 81);
     }
 }
