@@ -14,6 +14,14 @@ impl Pair {
     fn new(x: usize, y: usize) -> Self {
         Pair { x, y }
     }
+
+    fn x_i32(&self) -> i32 {
+        i32::try_from(self.x).expect(format!("couldn't represent {:?}", self).as_str())
+    }
+
+    fn y_i32(&self) -> i32 {
+        i32::try_from(self.y).expect(format!("couldn't represent {:?}", self).as_str())
+    }
 }
 
 #[derive(Default, PartialEq, Clone, Debug)]
@@ -41,10 +49,10 @@ impl Machine {
             .minimise(3 * a + b) // Minimize the cost function C = 3a + b
             .using(default_solver)
             .with(constraint!(
-                self.button_a.x as i32 * a + self.button_b.x as i32 * b == self.prize.x as i32
+                self.button_a.x_i32() * a + self.button_b.x_i32() * b == self.prize.x_i32()
             ))
             .with(constraint!(
-                self.button_a.y as i32 * a + self.button_b.y as i32 * b == self.prize.y as i32
+                self.button_a.y_i32() * a + self.button_b.y_i32() * b == self.prize.y_i32()
             ))
             .solve()
             .map(|solution| {
@@ -52,7 +60,11 @@ impl Machine {
                 let b_value = solution.value(b).round() as usize;
                 let cost = 3 * a_value + b_value;
 
-                let e_str = format!(
+                // Verify that the cost and rounding are accurate
+
+                assert_eq!(
+                    a_value * self.button_a.x + b_value * self.button_b.x,
+                    self.prize.x,
                     "Bad solution found\nMachine: {:?}\nsolution val a: {}\nsolution val b: {}\n",
                     self,
                     solution.value(a),
@@ -60,16 +72,12 @@ impl Machine {
                 );
 
                 assert_eq!(
-                    a_value * self.button_a.x + b_value * self.button_b.x,
-                    self.prize.x,
-                    "{}",
-                    &e_str
-                );
-                assert_eq!(
                     a_value * self.button_a.y + b_value * self.button_b.y,
                     self.prize.y,
-                    "{}",
-                    &e_str
+                    "Bad solution found\nMachine: {:?}\nsolution val a: {}\nsolution val b: {}\n",
+                    self,
+                    solution.value(a),
+                    solution.value(b)
                 );
 
                 ButtonPressCost {
@@ -82,7 +90,7 @@ impl Machine {
     }
 }
 
-#[aoc_generator(day13)]
+#[aoc_generator(day13, part1)]
 fn input_generator(input: &str) -> Vec<Machine> {
     let re = Regex::new(r"X[+=](\d+), Y[+=](\d+)").unwrap();
 
@@ -106,7 +114,20 @@ fn input_generator(input: &str) -> Vec<Machine> {
         .collect()
 }
 
+#[aoc_generator(day13, part2)]
+fn input_generator_two(input: &str) -> Vec<Machine> {
+    let mut machines = input_generator(input);
+
+    machines.iter_mut().for_each(|machine| {
+        machine.prize.x += 10000000000000;
+        machine.prize.y += 10000000000000;
+    });
+
+    machines
+}
+
 #[aoc(day13, part1)]
+#[aoc(day13, part2)]
 fn part1(machines: &[Machine]) -> usize {
     machines
         .iter()
