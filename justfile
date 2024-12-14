@@ -12,6 +12,8 @@ update:
 
 # Bootstrap the environment by updating submodules and installing cross
 bootstrap *aoc_token: update
+  # For good_lp crate
+  sudo apt install coinor-cbc coinor-libcbc-dev
   cargo install cargo-aoc
 
 credentials aoc_token: bootstrap
