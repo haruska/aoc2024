@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use aoc_runner_derive::aoc_generator;
+use aoc_runner_derive::{aoc, aoc_generator};
 use good_lp::{constraint, default_solver, variable, ProblemVariables, Solution, SolverModel};
 use regex::Regex;
 
@@ -93,6 +93,15 @@ fn input_generator(input: &str) -> Vec<Machine> {
         .collect()
 }
 
+#[aoc(day13, part1)]
+fn part1(machines: &[Machine]) -> usize {
+    machines
+        .iter()
+        .filter_map(|m| m.solve())
+        .map(|sol| sol.cost)
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -140,12 +149,15 @@ mod tests {
     }
 
     #[test]
+    fn test_part1() {
+        let input = input_generator(TEST_INPUT);
+        let res = part1(input.as_slice());
+        assert_eq!(res, 480);
+    }
+
+    #[test]
     fn test_puzzle_one() {
-        let machine = Machine {
-            button_a: Pair::new(94, 34),
-            button_b: Pair::new(22, 67),
-            prize: Pair::new(8400, 5400),
-        };
+        let machine = input_generator(TEST_INPUT)[0].clone();
 
         let res = machine.solve().expect("Failed to find solution");
         assert_eq!(res.a, 80);
@@ -155,12 +167,23 @@ mod tests {
 
     #[test]
     fn test_puzzle_two() {
-        let machine = Machine {
-            button_a: Pair::new(26, 66),
-            button_b: Pair::new(67, 21),
-            prize: Pair::new(12748, 12176),
-        };
+        let machine = input_generator(TEST_INPUT)[1].clone();
+        assert!(machine.solve().is_none());
+    }
 
+    #[test]
+    fn test_puzzle_three() {
+        let machine = input_generator(TEST_INPUT)[2].clone();
+
+        let res = machine.solve().expect("Failed to find solution");
+        assert_eq!(res.a, 38);
+        assert_eq!(res.b, 86);
+        assert_eq!(res.cost, 200);
+    }
+
+    #[test]
+    fn test_puzzle_four() {
+        let machine = input_generator(TEST_INPUT)[3].clone();
         assert!(machine.solve().is_none());
     }
 }
