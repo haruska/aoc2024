@@ -14,13 +14,6 @@ impl Pair {
     fn new(x: usize, y: usize) -> Self {
         Pair { x, y }
     }
-    fn x_f64(&self) -> f64 {
-        self.x as f64
-    }
-
-    fn y_f64(&self) -> f64 {
-        self.y as f64
-    }
 }
 
 #[derive(Default, PartialEq, Clone, Debug)]
@@ -48,16 +41,36 @@ impl Machine {
             .minimise(3 * a + b) // Minimize the cost function C = 3a + b
             .using(default_solver)
             .with(constraint!(
-                self.button_a.x_f64() * a + self.button_b.x_f64() * b == self.prize.x_f64()
+                self.button_a.x as i32 * a + self.button_b.x as i32 * b == self.prize.x as i32
             ))
             .with(constraint!(
-                self.button_a.y_f64() * a + self.button_b.y_f64() * b == self.prize.y_f64()
+                self.button_a.y as i32 * a + self.button_b.y as i32 * b == self.prize.y as i32
             ))
             .solve()
             .map(|solution| {
-                let a_value = solution.value(a) as usize;
-                let b_value = solution.value(b) as usize;
+                let a_value = solution.value(a).round() as usize;
+                let b_value = solution.value(b).round() as usize;
                 let cost = 3 * a_value + b_value;
+
+                let e_str = format!(
+                    "Bad solution found\nMachine: {:?}\nsolution val a: {}\nsolution val b: {}\n",
+                    self,
+                    solution.value(a),
+                    solution.value(b)
+                );
+
+                assert_eq!(
+                    a_value * self.button_a.x + b_value * self.button_b.x,
+                    self.prize.x,
+                    "{}",
+                    &e_str
+                );
+                assert_eq!(
+                    a_value * self.button_a.y + b_value * self.button_b.y,
+                    self.prize.y,
+                    "{}",
+                    &e_str
+                );
 
                 ButtonPressCost {
                     a: a_value,
