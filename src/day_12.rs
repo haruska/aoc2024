@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 use aoc_runner_derive::{aoc, aoc_generator};
+use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default, PartialEq, Eq, Hash, Clone, Debug)]
@@ -32,12 +35,12 @@ impl Map {
             })
             .collect();
 
-        let region_map = plots
+        let collected_regions = plots
             .iter()
             .flatten()
             .fold(HashMap::new(), |mut acc, plot| {
                 let entry: &mut Vec<Region> = acc.entry(plot.id).or_default();
-                if let Some(region) = entry.iter_mut().find(|r| r.adjacent_plot(&plot)) {
+                if let Some(region) = entry.iter_mut().find(|r| r.adjacent_plot(plot)) {
                     region.add_plot(plot.clone())
                 } else {
                     let mut region = Region {
@@ -47,6 +50,22 @@ impl Map {
                     region.add_plot(plot.clone());
                     entry.push(region)
                 }
+                acc
+            });
+
+        let region_map = collected_regions
+            .iter()
+            .fold(HashMap::new(), |mut acc, (k, regions)| {
+                let combined_regions: Vec<Region> = regions.iter().fold(vec![], |mut acc, r| {
+                    if let Some((idx, other)) = acc.iter().find_position(|r2| r2.adjacent(r)) {
+                        acc[idx] = r.merge(other);
+                    } else {
+                        acc.push(r.clone());
+                    }
+                    acc
+                });
+
+                acc.insert(*k, combined_regions);
                 acc
             });
 
@@ -85,8 +104,26 @@ impl Region {
         self.plots.insert(plot);
     }
 
+    fn merge(&self, other: &Region) -> Self {
+        assert_eq!(
+            other.plot_id, self.plot_id,
+            "Attempted to merge regions with non-matching ids"
+        );
+
+        Region {
+            plot_id: self.plot_id,
+            plots: self.plots.union(&other.plots).cloned().collect(),
+        }
+    }
+
     fn adjacent_plot(&self, plot: &Plot) -> bool {
-        self.plots.iter().any(|p| p.adjacent(&plot))
+        self.plots.iter().any(|p| p.adjacent(plot))
+    }
+
+    fn adjacent(&self, other: &Region) -> bool {
+        self.plots
+            .iter()
+            .any(|p1| other.plots.iter().any(|p2| p1.adjacent(p2)))
     }
 
     fn area(&self) -> usize {
@@ -122,6 +159,7 @@ fn part1(map: &Map) -> usize {
 mod tests {
     use super::*;
     use indoc::indoc;
+    use itertools::sorted;
     use rstest::rstest;
 
     const INPUT_ONE: &str = indoc! {"
@@ -194,6 +232,26 @@ mod tests {
         let region = &map.region_map.get(&'O').unwrap()[0];
         assert_eq!(region.area(), 21);
         assert_eq!(region.perimeter(), 36);
+    }
+
+    #[rstest]
+    #[case::r('R', &[216])]
+    #[case::i('I', &[32, 308])]
+    #[case::c('C', &[4, 392])]
+    #[case::f('F', &[180])]
+    #[case::v('V', &[260])]
+    #[case::j('J', &[220])]
+    #[case::e('E', &[234])]
+    #[case::m('M', &[60])]
+    #[case::s('S', &[24])]
+    fn test_price_per_region(#[case] c: char, #[case] exp_prices: &[usize]) {
+        let map = input_generator(INPUT_THREE);
+
+        let regions = map.region_map.get(&c).unwrap();
+        assert_eq!(regions.len(), exp_prices.len());
+
+        let prices: Vec<usize> = sorted(regions.iter().map(|r| r.price())).collect();
+        assert_eq!(prices.as_slice(), exp_prices)
     }
 
     #[rstest]
